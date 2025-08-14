@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "dev": "prisma generate && next dev --turbopack",
+    "build": "prisma generate --datasource-provider postgresql && prisma migrate deploy --datasource-provider postgresql && next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier . --write"
