@@ -101,6 +101,9 @@ model WorkLog {
   userAgent      String?
   ip             String?
 
+  // NEW: local calendar day from the client, e.g. "2025-08-13"
+  dayKey String @default("")
+
   @@index([userEmail, timestamp])
 }
 
