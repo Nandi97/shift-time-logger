@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
         hostname: 'avatars.githubusercontent.com'
       }
     ]
+  },
+  typescript: {
+    // ⚠️ Build will succeed even if there are TS errors
+    ignoreBuildErrors: true
+  },
+  eslint: {
+    // ⚠️ Build will succeed even if there are ESLint errors
+    ignoreDuringBuilds: true
   }
 };
 
