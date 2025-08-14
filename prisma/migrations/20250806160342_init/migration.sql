@@ -1,7 +1,0 @@
--- CreateTable
-CREATE TABLE "WorkLog" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT NOT NULL,
-    "action" TEXT NOT NULL,
-    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
