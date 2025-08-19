@@ -26,17 +26,40 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // inside POST(req)
+  const url = new URL(req.url);
+  const body = (await req.json().catch(() => ({}))) as any;
+
   // Optionally allow dry-runs (no email) via body: { dryRun: true }
-  const body = (await req.json().catch(() => ({}))) as Partial<{
-    dryRun: boolean;
-    toEmail: string;
-  }>;
+  // const body = (await req.json().catch(() => ({}))) as Partial<{
+  //   dryRun: boolean;
+  //   toEmail: string;
+  // }>;
   const dryRun = Boolean(body.dryRun);
+
+  // allow ?force=1 OR { "force": true } to bypass parity
+  const force = url.searchParams.get('force') === '1' || body.force === true;
 
   // Compute pay window (Sunday 00:00 → Sunday 00:00 EXCLUSIVE), anchored to your cycle
   // app/api/reports/biweekly/route.ts (inside POST)
   const { startKey, endKeyExclusive, tz, cycles } =
     currentBiweeklyWindowFromAnchor();
+
+  // skip only if NOT forced
+  if (!force && process.env.BIWEEKLY_PARITY) {
+    const wantOdd = process.env.BIWEEKLY_PARITY === 'odd';
+    const isOdd = cycles % 2 === 1;
+    const shouldSkip = wantOdd ? !isOdd : isOdd; // skip opposite parity
+    if (shouldSkip) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: 'off-week',
+        cycles,
+        hint: 'Add ?force=1 or {force:true} to override for testing.'
+      });
+    }
+  }
 
   // Only send on odd (or even) cycles to make it bi-weekly.
   // Flip this condition if you want the “other” Sundays.
