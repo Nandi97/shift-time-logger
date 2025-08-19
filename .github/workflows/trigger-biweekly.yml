@@ -8,9 +8,10 @@ jobs:
   call-endpoint:
     runs-on: ubuntu-latest
     steps:
-      - name: POST to /api/reports/biweekly
+      - name: Trigger biweekly report
         run: |
-          curl -sS -X POST "${{ secrets.APP_URL }}/api/reports/biweekly" \
-            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d '{"dryRun": true}'
+            curl -sS -X POST "$APP_URL/api/reports/biweekly" \
+            -H "x-cron-secret: $CRON_SECRET"
+    env:
+      APP_URL: ${{ secrets.APP_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
