@@ -4,6 +4,7 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { getSessionOrThrow } from '@/lib/isAdmin';
 
 // Haversine distance in meters
 function toRad(v: number) {
