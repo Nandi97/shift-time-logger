@@ -63,16 +63,16 @@ export async function POST(req: NextRequest) {
 
   // Only send on odd (or even) cycles to make it bi-weekly.
   // Flip this condition if you want the “other” Sundays.
-  if (
-    process.env.BIWEEKLY_PARITY === 'odd' ? cycles % 2 === 0 : cycles % 2 === 1
-  ) {
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: 'off-week',
-      cycles
-    });
-  }
+  // if (
+  //   process.env.BIWEEKLY_PARITY === 'odd' ? cycles % 2 === 0 : cycles % 2 === 1
+  // ) {
+  //   return NextResponse.json({
+  //     ok: true,
+  //     skipped: true,
+  //     reason: 'off-week',
+  //     cycles
+  //   });
+  // }
 
   // Fetch logs for window
   const logs = await prisma.workLog.findMany({
