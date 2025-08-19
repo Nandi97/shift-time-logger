@@ -1,0 +1,10 @@
+{
+  "crons": [
+    {
+      "path": "/api/reports/biweekly",
+      "schedule":  "*/1 * * * *", 
+      "method": "POST",
+      "headers": { "x-cron-secret": "@CRON_SECRET" }
+    }
+  ]
+}
