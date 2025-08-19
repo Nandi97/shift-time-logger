@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { toUTCFromToronto } from '@/lib/localtime';
 
 function toRad(v: number) {
   return (v * Math.PI) / 180;
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
+  const localDate = new Date(body.clientTime);
   const { action, clientTime, lat, lon, acc, dayKey } = body as {
     action?: 'Entry' | 'Exit' | 'LunchStart' | 'LunchEnd';
     clientTime?: string;
@@ -137,6 +139,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Convert to UTC before writing to DB
+  const utcDate = toUTCFromToronto(localDate);
+
   // Meta
   const userAgent = req.headers.get('user-agent') ?? undefined;
   const forwardedFor = req.headers.get('x-forwarded-for') ?? '';
@@ -151,7 +156,7 @@ export async function POST(req: NextRequest) {
       userEmail: session.user.email!,
       userName: session.user.name || session.user.email || 'User',
       action,
-      clientTime: clientTime ? new Date(clientTime) : undefined,
+      clientTime: utcDate ? new Date(utcDate) : undefined,
       latitude: lat,
       longitude: lon,
       accuracyMeters: acc,
