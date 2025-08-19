@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: POST to /api/reports/biweekly
         run: |
-          curl -sS -X POST "${{ secrets.NEXTAUTH_URL }}/api/reports/biweekly" \
+          curl -sS -X POST "${{ secrets.APP_URL }}/api/reports/biweekly" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -d '{"dryRun": true}'
