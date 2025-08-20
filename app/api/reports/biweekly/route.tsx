@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { currentBiweeklyWindowFromAnchor } from '@/lib/biweekly'; // make sure this exists (we shared earlier)
 import { sendMail } from '@/services/mailer'; // <- your Gmail-based mailer
 import { BiWeeklyReportEmail } from '@/components/emails/BiWeeklyReportEmail';
-import { render } from "@react-email/components";
+import { render } from '@react-email/components';
 
 // ----------------- small helpers -----------------
 type Totals = { name: string; email: string; minutes: number; days: number };
@@ -60,55 +60,82 @@ export async function POST(req: NextRequest) {
   // schedule guards
   const sunday = isSundayLocal();
   if (!force && !sunday) {
-    console.info("[biweekly][skip] not Sunday (local)", { ip, sunday });
-    return NextResponse.json({ ok: true, skipped: true, reason: "not Sunday" });
+    console.info('[biweekly][skip] not Sunday (local)', { ip, sunday });
+    return NextResponse.json({ ok: true, skipped: true, reason: 'not Sunday' });
   }
 
   // compute pay window & cycle
-  const { startKey, endKeyExclusive, tz, cycles } = currentBiweeklyWindowFromAnchor();
-  const wantOdd = process.env.BIWEEKLY_PARITY === "odd"; // optional parity control
+  const { startKey, endKeyExclusive, tz, cycles } =
+    currentBiweeklyWindowFromAnchor();
+  const wantOdd = process.env.BIWEEKLY_PARITY === 'odd'; // optional parity control
   const isOdd = cycles % 2 === 1;
-  const shouldSkip = !force && !!process.env.BIWEEKLY_PARITY && (wantOdd ? !isOdd : isOdd);
+  const shouldSkip =
+    !force && !!process.env.BIWEEKLY_PARITY && (wantOdd ? !isOdd : isOdd);
 
-  console.log("=== [biweekly] trigger ===", {
+  console.log('=== [biweekly] trigger ===', {
     atUtc: new Date().toISOString(),
     ip,
     force,
     dryRun,
     sunday,
     cycles,
-    parity: process.env.BIWEEKLY_PARITY || "none",
+    parity: process.env.BIWEEKLY_PARITY || 'none',
     shouldSkip,
-    window: `${startKey} → ${endKeyExclusive} (${tz})`,
+    window: `${startKey} → ${endKeyExclusive} (${tz})`
   });
 
   if (shouldSkip) {
-    console.warn("[biweekly][skip] off-week by parity", { cycles, wantOdd, isOdd });
-    return NextResponse.json({ ok: true, skipped: true, reason: "off-week", cycles });
+    console.warn('[biweekly][skip] off-week by parity', {
+      cycles,
+      wantOdd,
+      isOdd
+    });
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: 'off-week',
+      cycles
+    });
   }
 
   // fetch logs for window
   const logs = await prisma.workLog.findMany({
     where: { dayKey: { gte: startKey, lt: endKeyExclusive } },
-    orderBy: [{ userEmail: "asc" }, { dayKey: "asc" }, { timestamp: "asc" }],
-    select: { userEmail: true, userName: true, dayKey: true, action: true, timestamp: true },
+    orderBy: [{ userEmail: 'asc' }, { dayKey: 'asc' }, { timestamp: 'asc' }],
+    select: {
+      userEmail: true,
+      userName: true,
+      dayKey: true,
+      action: true,
+      timestamp: true
+    }
   });
 
-  console.info("[biweekly][data] fetched logs", { count: logs.length });
+  console.info('[biweekly][data] fetched logs', { count: logs.length });
 
   // pair Entry ↔ Exit per user/day
-  const perDay = new Map<string, { name: string; email: string; day: string; entry?: Date; exit?: Date }>();
+  const perDay = new Map<
+    string,
+    { name: string; email: string; day: string; entry?: Date; exit?: Date }
+  >();
   for (const l of logs) {
     const k = `${l.userEmail}|${l.dayKey}`;
-    if (!perDay.has(k)) perDay.set(k, { name: l.userName || l.userEmail, email: l.userEmail, day: l.dayKey });
+    if (!perDay.has(k))
+      perDay.set(k, {
+        name: l.userName || l.userEmail,
+        email: l.userEmail,
+        day: l.dayKey
+      });
     const row = perDay.get(k)!;
-    if (l.action === "Entry" && !row.entry) row.entry = l.timestamp;
-    if (l.action === "Exit" && !row.exit) row.exit = l.timestamp;
+    if (l.action === 'Entry' && !row.entry) row.entry = l.timestamp;
+    if (l.action === 'Exit' && !row.exit) row.exit = l.timestamp;
   }
 
   // aggregate
   const totals = new Map<string, Totals>();
-  const details: DetailRow[] = [["User", "Email", "Day", "Entry (UTC)", "Exit (UTC)", "Minutes"]];
+  const details: DetailRow[] = [
+    ['User', 'Email', 'Day', 'Entry (UTC)', 'Exit (UTC)', 'Minutes']
+  ];
 
   for (const [, r] of perDay) {
     const mins = r.entry && r.exit ? minutesDiff(r.entry, r.exit) : 0;
@@ -116,28 +143,33 @@ export async function POST(req: NextRequest) {
       r.name,
       r.email,
       r.day,
-      r.entry ? r.entry.toISOString() : "",
-      r.exit ? r.exit.toISOString() : "",
-      String(mins),
+      r.entry ? r.entry.toISOString() : '',
+      r.exit ? r.exit.toISOString() : '',
+      String(mins)
     ]);
-    const t = totals.get(r.email) || { name: r.name, email: r.email, minutes: 0, days: 0 };
+    const t = totals.get(r.email) || {
+      name: r.name,
+      email: r.email,
+      minutes: 0,
+      days: 0
+    };
     t.minutes += mins;
     t.days += 1;
     totals.set(r.email, t);
   }
 
-  const summaryRows = Array.from(totals.values()).map(t => ({
+  const summaryRows = Array.from(totals.values()).map((t) => ({
     name: t.name,
     email: t.email,
     hours: (t.minutes / 60).toFixed(2),
     minutes: String(t.minutes),
-    days: String(t.days),
+    days: String(t.days)
   }));
 
-  console.info("[biweekly][aggregate]", {
+  console.info('[biweekly][aggregate]', {
     users: totals.size,
     days: Math.max(0, details.length - 1),
-    example: summaryRows[0] || null,
+    example: summaryRows[0] || null
   });
 
   // render React Email → HTML
@@ -151,19 +183,22 @@ export async function POST(req: NextRequest) {
   );
 
   // CSVs
-  const summaryCsvRows: string[][] = [["User", "Email", "Total Hours", "Total Minutes", "Days"]];
-  for (const r of summaryRows) summaryCsvRows.push([r.name, r.email, r.hours, r.minutes, r.days]);
+  const summaryCsvRows: string[][] = [
+    ['User', 'Email', 'Total Hours', 'Total Minutes', 'Days']
+  ];
+  for (const r of summaryRows)
+    summaryCsvRows.push([r.name, r.email, r.hours, r.minutes, r.days]);
   const csvSummary = toCsv(summaryCsvRows);
   const csvDetails = toCsv(details);
 
   const subject = `Bi-weekly Hours (Sun–Sat) ${startKey} → ${endKeyExclusive}`;
 
   if (dryRun) {
-    console.info("[biweekly][dry-run] not sending email", {
+    console.info('[biweekly][dry-run] not sending email', {
       subject,
       to: process.env.REPORT_RECIPIENT_EMAIL,
-      summaryCsvBytes: Buffer.byteLength(csvSummary, "utf8"),
-      detailsCsvBytes: Buffer.byteLength(csvDetails, "utf8"),
+      summaryCsvBytes: Buffer.byteLength(csvSummary, 'utf8'),
+      detailsCsvBytes: Buffer.byteLength(csvDetails, 'utf8')
     });
     return NextResponse.json({
       ok: true,
@@ -171,7 +206,7 @@ export async function POST(req: NextRequest) {
       period: { startKey, endKeyExclusive, tz, cycles },
       users: totals.size,
       rows: logs.length,
-      elapsedMs: Date.now() - startedAt,
+      elapsedMs: Date.now() - startedAt
     });
   }
 
@@ -183,21 +218,30 @@ export async function POST(req: NextRequest) {
       htmlContent,
       optText: `Bi-weekly report ${startKey} -> ${endKeyExclusive} (${tz})`,
       attachments: [
-        { filename: `summary_${startKey}_${endKeyExclusive}.csv`, content: csvSummary },
-        { filename: `details_${startKey}_${endKeyExclusive}.csv`, content: csvDetails },
-      ],
+        {
+          filename: `summary_${startKey}_${endKeyExclusive}.csv`,
+          content: csvSummary
+        },
+        {
+          filename: `details_${startKey}_${endKeyExclusive}.csv`,
+          content: csvDetails
+        }
+      ]
     });
-    console.info("[biweekly][mail] sent", {
+    console.info('[biweekly][mail] sent', {
       to: process.env.REPORT_RECIPIENT_EMAIL,
-      subject,
+      subject
     });
   } catch (err: any) {
-    console.error("[biweekly][mail][error]", {
+    console.error('[biweekly][mail][error]', {
       message: err?.message,
       code: err?.code,
-      stack: err?.stack,
+      stack: err?.stack
     });
-    return NextResponse.json({ ok: false, error: "Email send failed" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: 'Email send failed' },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({
@@ -205,11 +249,11 @@ export async function POST(req: NextRequest) {
     period: { startKey, endKeyExclusive, tz, cycles },
     users: totals.size,
     rows: logs.length,
-    elapsedMs: Date.now() - startedAt,
+    elapsedMs: Date.now() - startedAt
   });
 }
 
 // Optional GET
 export async function GET() {
-  return NextResponse.json({ ok: false, error: "Use POST" }, { status: 405 });
+  return NextResponse.json({ ok: false, error: 'Use POST' }, { status: 405 });
 }

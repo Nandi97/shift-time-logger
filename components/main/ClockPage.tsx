@@ -5,6 +5,17 @@ import { Button } from '../ui/button';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { getSessionOrThrow } from '@/lib/isAdmin';
+import { DropdownMenuCheckboxItemProps } from '@radix-ui/react-dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import Link from 'next/link';
 
 // Haversine distance in meters
 function toRad(v: number) {
@@ -38,8 +49,12 @@ type Status = {
 
 type Geo = { lat?: number; lon?: number; acc?: number };
 
+type Checked = DropdownMenuCheckboxItemProps['checked'];
+
 export default function ClockPage() {
   const { data: session, status: authStatus } = useSession();
+
+  // console.log('Session', session);
 
   // Geolocation state
   const [geo, setGeo] = useState<Geo>({});
@@ -214,7 +229,7 @@ export default function ClockPage() {
     <div className="mx-auto max-w-md p-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Time Logger</h1>
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2">
           <div className="rounded-full border-2 border-pink-400">
             <Avatar>
               {session?.user?.image ? (
@@ -233,8 +248,46 @@ export default function ClockPage() {
             </Avatar>
           </div>
           <div className="text-right text-sm">
-            <div>{session?.user?.name || 'User'}</div>
-            <div className="text-gray-500">{session.user?.email || ''}</div>
+            <div className="text-base font-semibold">
+              {session?.user?.name || 'User'}
+            </div>
+            {/* <div className="text-gray-500">{session.user?.email || ''}</div> */}
+          </div>
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Icon icon="mdi:menu" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Navigation</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                {/* Regular item with link */}
+                <DropdownMenuItem asChild>
+                  <Link href="/me" className="flex items-center space-x-2">
+                    <Icon icon="mdi:account-clock-outline" />
+                    <span>My Attendance</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                {/* Conditionally disabled */}
+                <DropdownMenuItem
+                  asChild
+                  disabled={session.user.role !== 'ADMIN'}
+                >
+                  <Link
+                    href="/admin/reports"
+                    className="flex items-center space-x-2"
+                  >
+                    <Icon icon="mdi:document" />
+                    <span>Staff Reports</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

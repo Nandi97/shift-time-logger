@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    
     "dev": "prisma generate && next dev --turbopack",
     "build": "prisma generate && next build",
     "start": "next start",
@@ -14,6 +13,7 @@
     "@auth/prisma-adapter": "^2.10.0",
     "@prisma/client": "6.13.0",
     "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-email/components": "0.5.0",
     "@tanstack/react-query": "^5.85.0",

@@ -1,8 +1,8 @@
 name: Trigger biweekly report (test)
 on:
   schedule:
-    - cron: "0 9 * * 0"   # every 5 day minutes for testing
-  workflow_dispatch:        # allow manual run
+    - cron: '0 9 * * 0' # every 5 day minutes for testing
+  workflow_dispatch: # allow manual run
 
 jobs:
   call-endpoint:
@@ -10,11 +10,11 @@ jobs:
     steps:
       - name: Trigger biweekly report
         run: |
-            echo "[INFO] Triggering biweekly report at $(date -u)"
-            curl -sS -X POST "$APP_URL/api/reports/biweekly" \
-            -H "x-cron-secret: $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            || echo "[ERROR] curl request failed"
+          echo "[INFO] Triggering biweekly report at $(date -u)"
+          curl -sS -X POST "$APP_URL/api/reports/biweekly" \
+          -H "x-cron-secret: $CRON_SECRET" \
+          -H "Content-Type: application/json" \
+          || echo "[ERROR] curl request failed"
     env:
       APP_URL: ${{ secrets.APP_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
