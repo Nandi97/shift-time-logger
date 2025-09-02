@@ -4,13 +4,12 @@ A modern web-based system for **tracking staff attendance, managing
 entry/exit times, and generating reports**, built with **Next.js 14 (App
 Router)**, **shadcn/ui**, and **TypeScript**.
 
-```{=html}
+<img align="left" src="https://wakatime.com/badge/user/162dd9c9-7c7f-462e-81ef-741960841996/project/8f2ebebb-ca9f-44f4-b45d-048d06158227.svg" alt="Total time coded" />
+
 <p align="center">
-```
-`<img src="public/logo.png" alt="Project Logo" width="180" />`{=html}
-```{=html}
+<img src="public/logo.png" alt="Project Logo" width="180" />
 </p>
-```
+
 
 ------------------------------------------------------------------------
 
