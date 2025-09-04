@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '../ui/button';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -14,7 +15,13 @@ const schema = z.object({
   barcodeUnit: z.string().trim().optional().or(z.literal('')),
   barcodePack: z.string().trim().optional().or(z.literal('')),
   packSize: z
-    .number({ invalid_type_error: 'Pack size must be a number' })
+    // .number({ invalid_type_error: 'Pack size must be a number' })
+    .number({
+      error: (issue) =>
+        issue.input === undefined
+          ? 'This field is required'
+          : 'Pack size must be a number'
+    })
     .int('Must be an integer')
     .nonnegative('Must be >= 0')
     .default(0),
@@ -222,7 +229,7 @@ const ProductForm = ({
         </button>
 
         {showDelete && onDelete && (
-          <button
+          <Button
             type="button"
             onClick={async () => {
               if (!confirm('Delete this product?')) return;
@@ -231,7 +238,7 @@ const ProductForm = ({
             className="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-700"
           >
             Delete
-          </button>
+          </Button>
         )}
       </div>
     </form>
