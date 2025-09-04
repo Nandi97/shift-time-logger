@@ -1,45 +1,29 @@
-import React from 'react';
-import { auth } from '@/auth';
-import Link from 'next/link';
+// app/(protected)/layout.tsx
+import * as React from 'react';
+import Header from '@/components/layout/header';
 
 export default async function ProtectedLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  if (!session) {
-    return (
-      <div className="mx-auto max-w-md p-6 text-center">
-        <h1 className="mb-2 text-2xl font-semibold">Please sign in</h1>
-        <p className="text-slate-600">You must be signed in to continue.</p>
-        <div className="mt-4">
-          <Link href="/" className="rounded bg-blue-600 px-4 py-2 text-white">
-            Go to sign in
-          </Link>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="font-semibold">
-            Ops Suite
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/clock" className="hover:underline">
-              Time
-            </Link>
-            <Link href="/inventory" className="hover:underline">
-              Inventory
-            </Link>
-            <span className="text-slate-500">{session.user?.email}</span>
-          </div>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+    <div className="mx-auto flex min-h-screen flex-col bg-slate-50 p-4">
+      {/* Skip to content for a11y */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:shadow"
+      >
+        Skip to content
+      </a>
+
+      <Header />
+
+      {/* Main grows, PageContainer handles width, padding & scroll */}
+
+      <div id="main-content" className="w-full max-w-2xl">
+        {children}
+      </div>
     </div>
   );
 }

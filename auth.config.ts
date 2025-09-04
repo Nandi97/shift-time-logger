@@ -20,7 +20,7 @@ const authConfig = {
     })
   ],
   pages: {
-    signIn: '/' //sigin page
+    signIn: '/signin' //sigin page
   },
   // basePath: "/auth",
   session: { strategy: 'jwt' },

@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { ScannerInput } from '@/components/main/ScannerInput';
+import PageContainer from '@/components/layout/page-container';
 
 const PRESETS = [
   { id: 'DELIVER', label: 'Deliver to Outlet' },
@@ -43,7 +44,7 @@ const page = () => {
     }
   }
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <PageContainer>
       <h1 className="text-2xl font-semibold">Scan & Move</h1>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -96,7 +97,7 @@ const page = () => {
           ))}
         </ul>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

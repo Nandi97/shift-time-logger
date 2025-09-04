@@ -178,6 +178,7 @@ model Product {
   packSize    Int? // e.g., 6 units per pack
   // flags
   trackExpiry Boolean        @default(false) // set true for items with shelf-life
+  imageUrl    String? // ← ensure this is present
   notes       String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
