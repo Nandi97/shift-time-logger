@@ -10,62 +10,61 @@ Router)**, **shadcn/ui**, and **TypeScript**.
 <img src="public/logo.png" alt="Project Logo" width="180" />
 </p>
 
-
-------------------------------------------------------------------------
+---
 
 ## ✨ Overview
 
 This project provides a unified interface for both **staff** and
 **administrators**:
 
--   Staff can log in, view their attendance records, and check working
-    hours.
--   Administrators can generate staff reports, manage attendance, and
-    view aggregated analytics.
+- Staff can log in, view their attendance records, and check working
+  hours.
+- Administrators can generate staff reports, manage attendance, and
+  view aggregated analytics.
 
 The UI is fully responsive and leverages **shadcn/ui** for a consistent,
 accessible design.
 
-------------------------------------------------------------------------
+---
 
 ## 🚀 Features
 
--   🔑 Authentication & role-based access (Admin / Staff)
--   📊 Staff attendance dashboard
--   📝 Reports page (for Admins only)
--   📅 Time tracking (entry, exit, lunch breaks)
--   🌙 Beautiful UI components powered by shadcn/ui
--   🌍 Timezone-aware formatting (Toronto)
--   📱 Responsive layout for mobile and desktop
--   ⚡ API endpoints for attendance logging & reporting
+- 🔑 Authentication & role-based access (Admin / Staff)
+- 📊 Staff attendance dashboard
+- 📝 Reports page (for Admins only)
+- 📅 Time tracking (entry, exit, lunch breaks)
+- 🌙 Beautiful UI components powered by shadcn/ui
+- 🌍 Timezone-aware formatting (Toronto)
+- 📱 Responsive layout for mobile and desktop
+- ⚡ API endpoints for attendance logging & reporting
 
-------------------------------------------------------------------------
+---
 
 ## 🛠 Tech Stack
 
--   [Next.js 14 (App Router)](https://nextjs.org/)
--   [TypeScript](https://www.typescriptlang.org/)
--   [shadcn/ui](https://ui.shadcn.com/)
--   [Prisma ORM](https://www.prisma.io/) (for DB layer)
--   [PostgreSQL](https://www.postgresql.org/) or \[SQLite\] (dev)
--   [NextAuth.js](https://next-auth.js.org/) (authentication)
--   [date-fns + date-fns-tz](https://date-fns.org/) (time formatting)
--   [Iconify](https://iconify.design/) (icons)
+- [Next.js 14 (App Router)](https://nextjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Prisma ORM](https://www.prisma.io/) (for DB layer)
+- [PostgreSQL](https://www.postgresql.org/) or \[SQLite\] (dev)
+- [NextAuth.js](https://next-auth.js.org/) (authentication)
+- [date-fns + date-fns-tz](https://date-fns.org/) (time formatting)
+- [Iconify](https://iconify.design/) (icons)
 
-------------------------------------------------------------------------
+---
 
 ## ⚙️ Getting Started
 
 ### 1. Clone the repo
 
-``` bash
+```bash
 git clone https://github.com/your-username/staff-attendance-reports.git
 cd staff-attendance-reports
 ```
 
 ### 2. Install dependencies
 
-``` bash
+```bash
 npm install
 # or
 yarn install
@@ -75,7 +74,7 @@ yarn install
 
 Create a `.env` file in the root:
 
-``` env
+```env
 DATABASE_URL="postgresql://user:password@localhost:5432/attendance"
 NEXTAUTH_SECRET="your-secret"
 NEXTAUTH_URL="http://localhost:3000"
@@ -83,19 +82,19 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ### 4. Run database migrations
 
-``` bash
+```bash
 npx prisma migrate dev
 ```
 
 ### 5. Start the dev server
 
-``` bash
+```bash
 npm run dev
 ```
 
 App runs on <http://localhost:3000>
 
-------------------------------------------------------------------------
+---
 
 ## 📂 Folder Structure
 
@@ -110,15 +109,15 @@ App runs on <http://localhost:3000>
     ├── public/                  # Static files
     └── utils/torontoDateFormat  # Date formatting helpers
 
-------------------------------------------------------------------------
+---
 
 ## 🔌 API Routes
 
--   `POST /api/attendance` → log entry/exit/lunch
--   `GET /api/attendance/:userId` → fetch staff logs
--   `GET /api/reports` → admin reports
+- `POST /api/attendance` → log entry/exit/lunch
+- `GET /api/attendance/:userId` → fetch staff logs
+- `GET /api/reports` → admin reports
 
-------------------------------------------------------------------------
+---
 
 ## 👥 Contributing
 
@@ -130,17 +129,17 @@ Contributions are welcome!
 4.  Push to branch (`git push origin feature/your-feature`)
 5.  Open a Pull Request 🚀
 
-------------------------------------------------------------------------
+---
 
 ## 📜 License
 
 MIT License © 2025 Alvin Kigen
 
-------------------------------------------------------------------------
+---
 
 ## 🙌 Acknowledgements
 
--   [shadcn/ui](https://ui.shadcn.com/) for clean UI components
--   [date-fns](https://date-fns.org/) for time manipulation
--   [Prisma](https://www.prisma.io/) for database layer
--   [NextAuth](https://next-auth.js.org/) for auth
+- [shadcn/ui](https://ui.shadcn.com/) for clean UI components
+- [date-fns](https://date-fns.org/) for time manipulation
+- [Prisma](https://www.prisma.io/) for database layer
+- [NextAuth](https://next-auth.js.org/) for auth

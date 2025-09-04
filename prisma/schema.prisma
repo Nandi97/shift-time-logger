@@ -19,6 +19,24 @@ enum Role {
   ADMIN
 }
 
+enum LocationType {
+  WAREHOUSE
+  OUTLET
+  ONLINE
+  VIRTUAL // e.g., INTERNAL_USE, IN_TRANSIT
+}
+
+enum TxnType {
+  RECEIVE // into Warehouse (purchase, restock)
+  TRANSFER_OUT // leaving a location (to another)
+  TRANSFER_IN // arriving at a location (from another)
+  SALE // online sale (reduce Warehouse or Online location)
+  RETURN_IN // returned from outlet/customer back to Warehouse
+  ADJUSTMENT // manual correction
+  WRITE_OFF // expired/damaged discard
+  CONSUME_INTERNAL // practice/internal use
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -32,8 +50,9 @@ model User {
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  inventoryTxn InventoryTxn[]
 }
 
 model Account {
@@ -119,3 +138,85 @@ model WorkLog {
 // 1) Change datasource provider to postgresql
 // 2) Update DATABASE_URL
 // 3) Run `prisma migrate dev` to generate a new migration for PG
+
+model Brand {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Location {
+  id        String         @id @default(cuid())
+  name      String
+  type      LocationType
+  code      String         @unique // e.g., WH, OUT-QUEEN, ONLINE
+  active    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  // optional address fields if needed
+  txnsFrom  InventoryTxn[] @relation("fromLocation")
+  txnsTo    InventoryTxn[] @relation("toLocation")
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  sku         String         @unique // your internal SKU (print when no barcode)
+  name        String
+  brandId     String?
+  brand       Brand?         @relation(fields: [brandId], references: [id])
+  categoryId  String?
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  // barcodes
+  barcodeUnit String?        @unique
+  barcodePack String?        @unique
+  packSize    Int? // e.g., 6 units per pack
+  // flags
+  trackExpiry Boolean        @default(false) // set true for items with shelf-life
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  txns        InventoryTxn[]
+}
+
+// Ledger rows; positive qty always represents the “moved amount”.
+// Direction is expressed via fromLocationId/toLocationId.
+// Stock(location) = Σ qty INTO location (toLocation) − Σ qty OUT OF location (fromLocation).
+model InventoryTxn {
+  id        String   @id @default(cuid())
+  ts        DateTime @default(now()) // stored UTC
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+
+  fromLocationId String? // nullable when RECEIVE/CONSUME_INTERNAL/etc.
+  fromLocation   Location? @relation("fromLocation", fields: [fromLocationId], references: [id])
+
+  toLocationId String? // nullable when WRITE_OFF/etc.
+  toLocation   Location? @relation("toLocation", fields: [toLocationId], references: [id])
+
+  qtyUnits      Int // in *base units* (not packs); convert on input when scanning a pack
+  type          TxnType
+  reason        String? // human-friendly reason/category: "Delivery to Queen St", "Practice", "Expired", order number, etc.
+  performedById String? // user who did it (you)
+  performedBy   User?   @relation(fields: [performedById], references: [id])
+
+  // Optional lot/expiry captured per movement
+  lotCode    String?
+  expiryDate DateTime?
+
+  // extra metadata (links to Shopify/Order/Doc, outlet name, etc.)
+  ref   String?
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, ts])
+  @@index([fromLocationId, toLocationId, ts])
+  @@index([lotCode, expiryDate])
+}
