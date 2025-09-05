@@ -7,6 +7,7 @@ import Providers from '@/components/layout/providers';
 import { auth } from '@/auth';
 import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/lib/font';
+import Header from '@/components/layout/header';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -61,6 +62,7 @@ export default async function RootLayout({
         <NextTopLoader showSpinner={false} />
         <Providers session={session}>
           <Toaster />
+          <Header />
           {children}
         </Providers>
       </body>

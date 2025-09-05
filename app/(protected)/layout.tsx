@@ -17,8 +17,6 @@ export default async function ProtectedLayout({
         Skip to content
       </a>
 
-      <Header />
-
       {/* Main grows, PageContainer handles width, padding & scroll */}
 
       <div id="main-content" className="w-full max-w-2xl">

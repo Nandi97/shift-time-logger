@@ -15,7 +15,7 @@ export default function GithubSignInButton() {
       className="w-full"
       variant="outline"
       type="button"
-      onClick={() => signIn('github', { callbackUrl: callbackUrl ?? '/clock' })}
+      onClick={() => signIn('github', { callbackUrl: callbackUrl ?? '/' })}
     >
       <Icon icon="mdi:github" className="mr-2 h-4 w-4" />
       Continue with Github
