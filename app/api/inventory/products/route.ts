@@ -142,3 +142,39 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET(req: NextRequest) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const q = url.searchParams.get('q')?.trim() || '';
+
+  const products = await prisma.product.findMany({
+    where: q
+      ? {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { sku: { contains: q, mode: 'insensitive' } },
+            { barcodeUnit: q },
+            { barcodePack: q }
+          ]
+        }
+      : {},
+    orderBy: { name: 'asc' },
+    take: 50, // cap results to prevent heavy loads
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      imageUrl: true,
+      barcodeUnit: true,
+      barcodePack: true,
+      packSize: true
+    }
+  });
+
+  return NextResponse.json({ ok: true, products });
+}
