@@ -1,6 +1,5 @@
 // app/(protected)/layout.tsx
 import * as React from 'react';
-import Header from '@/components/layout/header';
 
 export default async function ProtectedLayout({
   children
@@ -8,7 +7,7 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex min-h-screen flex-col bg-slate-50 p-4">
+    <div className="flex min-h-screen flex-col bg-slate-50 p-4">
       {/* Skip to content for a11y */}
       <a
         href="#main-content"
@@ -19,7 +18,7 @@ export default async function ProtectedLayout({
 
       {/* Main grows, PageContainer handles width, padding & scroll */}
 
-      <div id="main-content" className="w-full max-w-2xl">
+      <div id="main-content" className="w-full max-w-7xl">
         {children}
       </div>
     </div>
