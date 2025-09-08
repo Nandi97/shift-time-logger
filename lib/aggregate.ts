@@ -1,65 +1,112 @@
-import { prisma } from '@/lib/prisma';
-
-export type DayAggregate = {
-  userEmail: string;
-  userName: string;
-  dayKey: string; // YYYY-MM-DD
-  entry?: Date;
-  lunchStart?: Date;
-  lunchEnd?: Date;
-  exit?: Date;
-  minutesTotal: number; // Entry->Exit (no lunch deduction per requirement)
+// lib/aggregateDaily.ts
+type RawLog = {
+  id: string;
+  userEmail: string | null;
+  userName: string | null;
+  action: string; // ENTRY | EXIT | LUNCH_START | LUNCH_END (case-insensitive variants ok)
+  clientTime: string | Date;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracyMeters?: number | null;
 };
 
-export async function fetchAggregates(
-  startKey: string,
-  endKeyExclusive: string,
-  userEmail?: string
-) {
-  const where: any = { dayKey: { gte: startKey, lt: endKeyExclusive } };
-  if (userEmail) where.userEmail = userEmail;
+export type DailyRow = {
+  dateKey: string; // YYYY-MM-DD (Toronto local)
+  userEmail: string;
+  userName?: string | null;
+  entryAt?: string; // ISO
+  lunchStartAt?: string; // ISO
+  lunchStopAt?: string; // ISO
+  exitAt?: string; // ISO
+  singles: string[]; // e.g., ["LUNCH_START"], if unmatched
+  logs: RawLog[]; // raw that contributed (for drill-down)
+};
 
-  const logs = await prisma.workLog.findMany({
-    where,
-    orderBy: [{ userEmail: 'asc' }, { dayKey: 'asc' }, { timestamp: 'asc' }],
-    select: {
-      userEmail: true,
-      userName: true,
-      dayKey: true,
-      action: true,
-      timestamp: true
-    }
-  });
+const TORONTO_TZ = 'America/Toronto';
 
-  const byKey = new Map<string, DayAggregate>();
+// normalize action labels
+function norm(action: string) {
+  const a = action.toUpperCase();
+  if (a.startsWith('ENTRY')) return 'ENTRY';
+  if (a.startsWith('EXIT')) return 'EXIT';
+  if (
+    a === 'LUNCH_START' ||
+    a === 'LUNCH BEGIN' ||
+    a === 'LUNCHBEGIN' ||
+    a === 'LUNCH-START'
+  )
+    return 'LUNCH_START';
+  if (
+    a === 'LUNCH_END' ||
+    a === 'LUNCH STOP' ||
+    a === 'LUNCHEND' ||
+    a === 'LUNCH-STOP'
+  )
+    return 'LUNCH_END';
+  return a;
+}
 
-  for (const l of logs) {
-    const k = `${l.userEmail}|${l.dayKey}`;
-    if (!byKey.has(k))
-      byKey.set(k, {
-        userEmail: l.userEmail,
-        userName: l.userName || l.userEmail,
-        dayKey: l.dayKey,
-        minutesTotal: 0
+function toLocalDateKey(d: Date) {
+  // Format to Toronto local YYYY-MM-DD without bringing in date-fns (server is UTC-safe here)
+  const tzDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TORONTO_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(d);
+  // en-CA gives YYYY-MM-DD
+  return tzDate;
+}
+
+export function aggregateLogsToDaily(rows: RawLog[]): DailyRow[] {
+  // group by userEmail + local date
+  const map = new Map<string, DailyRow>();
+
+  for (const r of rows) {
+    const when = new Date(r.clientTime);
+    const dateKey = toLocalDateKey(when);
+    const email = (r.userEmail || '').toLowerCase();
+    if (!email) continue;
+
+    const key = `${email}::${dateKey}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        dateKey,
+        userEmail: email,
+        userName: r.userName ?? null,
+        singles: [],
+        logs: []
       });
-    const row = byKey.get(k)!;
-    if (l.action === 'Entry' && !row.entry) row.entry = l.timestamp;
-    if (l.action === 'LunchStart' && !row.lunchStart)
-      row.lunchStart = l.timestamp;
-    if (l.action === 'LunchEnd' && !row.lunchEnd) row.lunchEnd = l.timestamp;
-    if (l.action === 'Exit' && !row.exit) row.exit = l.timestamp;
-  }
-
-  for (const [, r] of byKey) {
-    if (r.entry && r.exit) {
-      r.minutesTotal = Math.max(
-        0,
-        Math.round((r.exit.getTime() - r.entry.getTime()) / 60000)
-      );
-    } else {
-      r.minutesTotal = 0;
     }
+    const agg = map.get(key)!;
+    const A = norm(r.action);
+    agg.logs.push(r);
+
+    // fill first seen timestamps for each slot; keep earliest occurrence
+    const iso = new Date(r.clientTime).toISOString();
+    if (A === 'ENTRY' && !agg.entryAt) agg.entryAt = iso;
+    else if (A === 'LUNCH_START' && !agg.lunchStartAt) agg.lunchStartAt = iso;
+    else if (A === 'LUNCH_END' && !agg.lunchStopAt) agg.lunchStopAt = iso;
+    else if (A === 'EXIT' && !agg.exitAt) agg.exitAt = iso;
   }
 
-  return Array.from(byKey.values());
+  // compute singles
+  for (const agg of map.values()) {
+    const singles: string[] = [];
+    if (!agg.entryAt) singles.push('ENTRY');
+    if (agg.lunchStartAt && !agg.lunchStopAt) singles.push('LUNCH_END missing');
+    if (agg.lunchStopAt && !agg.lunchStartAt)
+      singles.push('LUNCH_START missing');
+    if (!agg.exitAt) singles.push('EXIT');
+    agg.singles = singles;
+  }
+
+  // sort by date desc, then user
+  return Array.from(map.values()).sort((a, b) =>
+    a.dateKey < b.dateKey
+      ? 1
+      : a.dateKey > b.dateKey
+        ? -1
+        : a.userEmail.localeCompare(b.userEmail)
+  );
 }
