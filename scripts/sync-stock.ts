@@ -135,56 +135,111 @@ async function main() {
     }
 
     // product (upsert by SKU)
-    const product = await prisma.product.upsert({
-      where: { sku },
-      update: {
-        name,
-        brandId,
-        categoryId,
-        barcodeUnit: barcodeUnit ?? null,
-        barcodePack: barcodePack ?? null,
-        packSize: packSize > 0 ? packSize : null,
-        trackExpiry,
-        imageUrl: imageUrl ?? null,
-        notes: notes ?? null
-      },
-      create: {
-        name,
-        sku,
-        brandId,
-        categoryId,
-        barcodeUnit: barcodeUnit ?? null,
-        barcodePack: barcodePack ?? null,
-        packSize: packSize > 0 ? packSize : null,
-        trackExpiry,
-        imageUrl: imageUrl ?? null,
-        notes: notes ?? null
-      },
-      select: { id: true, name: true, sku: true }
-    });
-
-    // location
-    const loc = await ensureLocation(locationCode);
-
-    // set stock to qty by issuing an ADJUSTMENT delta
-    const current = await getOnHand(product.id, loc.id);
-    const delta = qty - current;
-    if (delta !== 0) {
-      await prisma.inventoryTxn.create({
-        data: {
-          productId: product.id,
-          fromLocationId: delta < 0 ? loc.id : null,
-          toLocationId: delta > 0 ? loc.id : null,
-          qtyUnits: Math.abs(delta),
-          type: 'ADJUSTMENT',
-          reason: 'Sync from Excel'
+    // …inside your for(row of rows) loop, right before upsert
+    try {
+      const product = await prisma.product.upsert({
+        where: { sku },
+        update: {
+          name,
+          brandId,
+          categoryId,
+          barcodeUnit:
+            barcodeUnit && barcodeUnit.trim() ? barcodeUnit.trim() : null,
+          barcodePack:
+            barcodePack && barcodePack.trim() ? barcodePack.trim() : null,
+          packSize: packSize > 0 ? packSize : null,
+          trackExpiry,
+          imageUrl: imageUrl || null,
+          notes: notes || null
+        },
+        create: {
+          name,
+          sku,
+          brandId,
+          categoryId,
+          barcodeUnit:
+            barcodeUnit && barcodeUnit.trim() ? barcodeUnit.trim() : null,
+          barcodePack:
+            barcodePack && barcodePack.trim() ? barcodePack.trim() : null,
+          packSize: packSize > 0 ? packSize : null,
+          trackExpiry,
+          imageUrl: imageUrl || null,
+          notes: notes || null
+        },
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          barcodeUnit: true,
+          barcodePack: true
         }
       });
-      console.log(
-        `[SET] ${product.sku} @ ${loc.code}: ${current} → ${qty} (Δ ${delta > 0 ? '+' : '-'}${Math.abs(delta)})`
-      );
-    } else {
-      console.log(`[OK ] ${product.sku} @ ${loc.code}: already ${qty}`);
+
+      // location
+      const loc = await ensureLocation(locationCode);
+
+      // set stock to qty by issuing an ADJUSTMENT delta
+      const current = await getOnHand(product.id, loc.id);
+      const delta = qty - current;
+      if (delta !== 0) {
+        await prisma.inventoryTxn.create({
+          data: {
+            productId: product.id,
+            fromLocationId: delta < 0 ? loc.id : null,
+            toLocationId: delta > 0 ? loc.id : null,
+            qtyUnits: Math.abs(delta),
+            type: 'ADJUSTMENT',
+            reason: 'Sync from Excel'
+          }
+        });
+        console.log(
+          `[SET] ${product.sku} @ ${loc.code}: ${current} → ${qty} (Δ ${delta > 0 ? '+' : '-'}${Math.abs(delta)})`
+        );
+      } else {
+        console.log(`[OK ] ${product.sku} @ ${loc.code}: already ${qty}`);
+      }
+
+      if (process.env.DEBUG_SYNC) {
+        console.log(
+          `[UPSERT OK] ${sku}  unit=${product.barcodeUnit ?? '∅'}  pack=${product.barcodePack ?? '∅'}`
+        );
+      }
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        // Prisma unique constraint
+        const target = Array.isArray(err?.meta?.target)
+          ? err.meta.target.join(',')
+          : String(err?.meta?.target || '');
+        console.error(`\n[UNIQUE VIOLATION] SKU=${sku} target=[${target}]`);
+        console.error(`Row:`, { name, sku, barcodeUnit, barcodePack });
+
+        // Try to find the conflicting record(s)
+        if (target.includes('barcodeUnit') && barcodeUnit) {
+          const clash = await prisma.product.findFirst({
+            where: { barcodeUnit },
+            select: { id: true, sku: true, name: true, barcodeUnit: true }
+          });
+          console.error(`Conflicts with existing (barcodeUnit):`, clash);
+        }
+        if (target.includes('barcodePack') && barcodePack) {
+          const clash = await prisma.product.findFirst({
+            where: { barcodePack },
+            select: { id: true, sku: true, name: true, barcodePack: true }
+          });
+          console.error(`Conflicts with existing (barcodePack):`, clash);
+        }
+        if (target.includes('sku')) {
+          const clash = await prisma.product.findUnique({
+            where: { sku },
+            select: { id: true, sku: true, name: true }
+          });
+          console.error(`Conflicts with existing (sku):`, clash);
+        }
+      } else {
+        console.error('[UPSERT ERROR]', err?.message || err);
+      }
+      // rethrow to stop the run (or continue if you prefer)
+      throw err;
     }
   }
 }

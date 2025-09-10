@@ -1,17 +1,19 @@
 # .github/workflows/stock-sync.yml
 name: Stock Sync
-description: Sync xmls file from drive to database every 5 minutes (for testing)
+description: Sync xmls file from drive to database every 12 hours
 on:
   schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes (TESTING)
+    - cron: "0 */12 * * *"  # every 12 hours
   workflow_dispatch: {}      # manual trigger
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     concurrency:
       group: stock-sync
       cancel-in-progress: true
+
     steps:
       - name: Checkout (optional if not reading repo file)
         uses: actions/checkout@v4
@@ -22,8 +24,22 @@ jobs:
           node-version: 20
           # cache: 'pnpm'
 
+          
+
       - name: Enable corepack (pnpm)
         run: corepack enable
+
+      - name: Get pnpm store dir
+        id: store
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.store.outputs.STORE_PATH }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -32,9 +48,10 @@ jobs:
         run: pnpm prisma generate
 
       - name: Run stock sync
-        run: pnpm tsx scripts/sync-stock.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STOCK_XLSX_URL: ${{ secrets.STOCK_XLSX_URL }}
           # Optional: hard-set a warehouse code for adjustments
           # WH_CODE: WH
+          
+        run: pnpm tsx scripts/sync-stock.ts
