@@ -79,7 +79,7 @@ const ProductsView = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
       <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2">
           <label className="mb-1 block text-sm font-medium">Search</label>

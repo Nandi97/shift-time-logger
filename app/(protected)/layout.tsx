@@ -18,7 +18,7 @@ export default async function ProtectedLayout({
 
       {/* Main grows, PageContainer handles width, padding & scroll */}
 
-      <div id="main-content" className="w-full max-w-7xl">
+      <div id="main-content" className="w-full">
         {children}
       </div>
     </div>
