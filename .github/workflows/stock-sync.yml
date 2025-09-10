@@ -9,16 +9,21 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    concurrency:
+      group: stock-sync
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (optional if not reading repo file)
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+        #   cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Install
+        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -30,5 +35,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STOCK_XLSX_URL: ${{ secrets.STOCK_XLSX_URL }}
-        run: pnpm tsx scripts/sync-stock.ts
-
+          # Optional: hard-set a warehouse code for adjustments
+          # WH_CODE: WH
+        run: node --loader tsx ./scripts/sync-stock.ts
