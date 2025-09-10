@@ -1,0 +1,39 @@
+# .github/workflows/stock-sync.yml
+name: Stock Sync
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (TESTING)
+  workflow_dispatch: {}      # manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stock-sync
+      cancel-in-progress: true
+    steps:
+      - name: Checkout (optional if not reading repo file)
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm i --frozen-lockfile
+
+      - name: Generate Prisma
+        run: pnpm prisma generate
+
+      - name: Run stock sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STOCK_XLSX_URL: ${{ secrets.STOCK_XLSX_URL }}
+          # Optional: hard-set a warehouse code for adjustments
+          # WH_CODE: WH
+        run: node --loader tsx ./scripts/sync-stock.ts

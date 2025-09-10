@@ -1,4 +1,4 @@
-name: Trigger biweekly report (test)
+name: Trigger biweekly report
 on:
   schedule:
     - cron: '0 9 * * 0' # every 5 day minutes for testing
