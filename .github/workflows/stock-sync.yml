@@ -4,7 +4,7 @@ name: Stock Sync
 on:
   schedule:
     - cron: "*/5 * * * *"   # every 5 minutes (TESTING)
-  workflow_dispatch: {}
+  workflow_dispatch: {}      # manual trigger
 
 jobs:
   sync:
@@ -12,21 +12,20 @@ jobs:
     concurrency:
       group: stock-sync
       cancel-in-progress: true
-
     steps:
-      - name: Checkout
+      - name: Checkout (optional if not reading repo file)
         uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+        #   cache: 'pnpm'
 
       - name: Enable corepack (pnpm)
         run: corepack enable
 
-      - name: Install deps
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma
@@ -37,4 +36,5 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STOCK_XLSX_URL: ${{ secrets.STOCK_XLSX_URL }}
-          # WH_CODE: WH   # optional
+          # Optional: hard-set a warehouse code for adjustments
+          # WH_CODE: WH
