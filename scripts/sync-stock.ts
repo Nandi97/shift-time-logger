@@ -27,16 +27,27 @@ type Row = {
   'Location Code (e.g., WH, OUT-QUEEN, ONLINE)': string;
 };
 
+function looksLikeHtml(buf: Buffer) {
+  const s = buf.toString('utf8', 0, 256).toLowerCase();
+  return s.includes('<html') || s.includes('<!doctype html');
+}
 async function fetchBuffer(src: string): Promise<Buffer> {
-  if (/^https?:\/\//i.test(src)) {
-    const res = await fetch(src);
-    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${src}`);
-    const arrayBuf = await res.arrayBuffer();
-    return Buffer.from(arrayBuf);
-  } else {
-    const abs = path.isAbsolute(src) ? src : path.join(process.cwd(), src);
-    return await fs.readFile(abs);
+  const res = await fetch(src, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${src}`);
+
+  const ct = res.headers.get('content-type') || '';
+  const buf = Buffer.from(await res.arrayBuffer());
+
+  // Basic guard: if we got HTML, the link is wrong / not public
+  if (ct.includes('text/html') || looksLikeHtml(buf)) {
+    const preview = buf.toString('utf8', 0, Math.min(buf.length, 200));
+    throw new Error(
+      `Expected xlsx, got HTML. Check that STOCK_XLSX_URL is a direct-download link and the file is public.\n` +
+        `Content-Type: ${ct}\nPreview: ${preview.slice(0, 200)}`
+    );
   }
+
+  return buf;
 }
 
 async function ensureLocation(code: string) {

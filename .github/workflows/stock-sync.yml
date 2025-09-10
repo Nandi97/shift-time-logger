@@ -1,6 +1,6 @@
 # .github/workflows/stock-sync.yml
 name: Stock Sync
-
+description: Sync xmls file from drive to database every 5 minutes (for testing)
 on:
   schedule:
     - cron: "*/5 * * * *"   # every 5 minutes (TESTING)
@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-        #   cache: 'pnpm'
+          cache: 'pnpm'
 
       - name: Enable corepack (pnpm)
         run: corepack enable
